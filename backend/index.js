@@ -1,10 +1,8 @@
-// index.js
 require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-// const MongoStore = require("connect-mongo");
 const cors = require("cors");
 
 const app = express();
@@ -31,6 +29,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Set 'trust proxy' if behind a proxy
+app.set("trust proxy", 1); // Trust first proxy
+
 app.use(
   session({
     name: "debai_test.sid",
@@ -38,10 +39,10 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: true, // Set to true if using HTTPS
+      secure: true, // Set to true for HTTPS
       httpOnly: true,
       maxAge: 3600000, // 1 hour
-      sameSite: "none",
+      sameSite: "none", // For cross-domain cookies
     },
   })
 );
@@ -70,7 +71,7 @@ passport.use(
 );
 
 passport.serializeUser((user, done) => {
-  console.log("serializeing",user)
+  console.log("serializing", user);
   done(null, user);
 });
 
@@ -90,14 +91,16 @@ app.get(
     res.redirect(`${process.env.FRONTEND_URL}`); // Redirect to your frontend
   }
 );
+
 app.get("/api/auth/logout", (req, res) => {
   req.logout((err) => {
     if (err) return next(err);
     req.session.destroy();
-    res.clearCookie("debai.sid");
+    res.clearCookie("debai_test.sid");
     res.redirect(`${process.env.FRONTEND_URL}`);
   });
 });
+
 // New endpoint to get session user
 app.get("/api/auth/user", (req, res) => {
   if (req.isAuthenticated()) {
