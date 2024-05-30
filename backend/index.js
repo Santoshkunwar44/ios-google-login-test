@@ -41,7 +41,7 @@ app.use(
       secure: true, // Set to true if using HTTPS
       httpOnly: true,
       maxAge: 3600000, // 1 hour
-      sameSite: "None",
+      sameSite: "none",
     },
   })
 );
