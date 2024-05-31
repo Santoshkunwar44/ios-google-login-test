@@ -6,6 +6,9 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const cors = require("cors");
 
 const app = express();
+app.use(express.json())
+
+
 
 // Middleware configurations
 app.use(
@@ -46,7 +49,6 @@ app.use(
     },
   })
 );
-
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -74,7 +76,6 @@ passport.serializeUser((user, done) => {
   console.log("serializing", user);
   done(null, user);
 });
-
 passport.deserializeUser((user, done) => {
   done(null, user);
 });
@@ -92,22 +93,41 @@ app.get(
   }
 );
 
-app.get("/api/auth/logout", (req, res) => {
-  req.logout((err) => {
-    if (err) return next(err);
-    req.session.destroy();
-    res.clearCookie("debai_test.sid");
-    res.redirect(`${process.env.FRONTEND_URL}`);
-  });
+app.post("/api/auth/logout", (req, res) => {
+  // req.logout((err) => {
+  //   if (err) return next(err);
+  //   req.session.destroy();
+  //   res.clearCookie("debai_test.sid");
+  //   res.redirect(`${process.env.FRONTEND_URL}`);
+  // });
+
+     req.session.destroy((err) => {
+       if (err) {
+         throw Error(err);
+       }
+       res.clearCookie("debai_test.sid");
+       res
+         .status(200)
+         .json({ message: "successfully logged out", success: true });
+     });
 });
+
 
 // New endpoint to get session user
 app.get("/api/auth/user", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.json({ user: req.user });
+  const sessionUser = req.session?.user;
+  console.log("session user ",sessionUser);
+  if (sessionUser) {
+    res.json({ user: req.session.user });
   } else {
-    res.status(401).json({ message: "Not authenticated" });
+    res.status(403).json({message:"No user in session"});
   }
+});
+
+app.post("/api/auth/session-user", (req, res) => {
+  req.session.user = req.body;
+  console.log("setting session user ", req.session?.user ,req.body);
+  res.json({ user: req.session.user });
 });
 
 app.listen(8000, () => {
