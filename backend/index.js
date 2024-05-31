@@ -1,9 +1,8 @@
 require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
-const passport = require("passport");
-const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const cors = require("cors");
+
 
 const app = express();
 app.use(express.json())
@@ -14,10 +13,12 @@ app.use(express.json())
 app.use(
   cors({
     origin: [process.env.FRONTEND_URL],
-    methods: ["POST", "GET"],
+    methods: ["POST", "PUT", "DELETE", "OPTIONS", "GET"],
     credentials: true,
   })
 );
+
+
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Credentials", true);
@@ -32,8 +33,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Set 'trust proxy' if behind a proxy
-app.set("trust proxy", 1); // Trust first proxy
+app.set("trust proxy", 1);
 
 app.use(
   session({
@@ -45,72 +45,13 @@ app.use(
       secure: true, // Set to true for HTTPS
       httpOnly: true,
       maxAge: 3600000, // 1 hour
-      sameSite: "none", // For cross-domain cookies
+      sameSite: "None", // For cross-domain cookies
     },
   })
 );
-app.use(passport.initialize());
-app.use(passport.session());
 
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: `${process.env.BACKEND_ROOT_URL}/api/auth/google/callback`,
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      // Here you would find or create a user in your database
-      const user = {
-        id: new Date().getTime(),
-        googleId: profile.id,
-        name: profile.displayName,
-        email: profile.emails[0].value,
-      };
-      return done(null, user);
-    }
-  )
-);
 
-passport.serializeUser((user, done) => {
-  console.log("serializing", user);
-  done(null, user);
-});
-passport.deserializeUser((user, done) => {
-  done(null, user);
-});
 
-app.get(
-  "/api/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
-
-app.get(
-  "/api/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }),
-  (req, res) => {
-    res.redirect(`${process.env.FRONTEND_URL}`); // Redirect to your frontend
-  }
-);
-
-app.post("/api/auth/logout", (req, res) => {
-  // req.logout((err) => {
-  //   if (err) return next(err);
-  //   req.session.destroy();
-  //   res.clearCookie("debai_test.sid");
-  //   res.redirect(`${process.env.FRONTEND_URL}`);
-  // });
-
-     req.session.destroy((err) => {
-       if (err) {
-         throw Error(err);
-       }
-       res.clearCookie("debai_test.sid");
-       res
-         .status(200)
-         .json({ message: "successfully logged out", success: true });
-     });
-});
 
 
 // New endpoint to get session user
